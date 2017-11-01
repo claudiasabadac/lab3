@@ -1,0 +1,171 @@
+package seriaf.poo.server.config;
+
+import seriaf.poo.server.exceptions.MissingKeyException;
+import seriaf.poo.server.exceptions.UnknownKeyException;
+import seriaf.poo.server.exceptions.InvalidFormatException;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Scanner;
+
+public class ServerConfig {
+
+    private Map<String, String> mProperties;
+    private String[] mKnownProperties = {"TCP_PORT", "MAX_CLIENTS"};
+
+    public ServerConfig(String filename) throws IOException, InvalidFormatException, UnknownKeyException, MissingKeyException {
+
+        mProperties = new HashMap<>();
+
+        FileInputStream fileInputStream = new FileInputStream(filename);
+        Scanner scanner = new Scanner(fileInputStream);
+
+        while (scanner.hasNext()) {
+            String line = scanner.nextLine().trim();
+            if (line.startsWith("#") || line.isEmpty()) {
+                continue;
+            }
+
+            if (!line.matches("[a-zA-Z_][a-zA-Z0-9_]*\\s*=\\s*[0-9]+")) {
+                throw new InvalidFormatException("Linia " + line + " nu se potriveste cu formatul asteptat!");
+            }
+
+            processLine(line);
+        }
+
+        for (String property : mKnownProperties) {
+            if (!mProperties.containsKey(property)) {
+                throw new MissingKeyException("Cheia " + property + " nu exista in fisier.");
+            }
+        }
+    }
+
+    public ServerConfig() throws IOException, InvalidFormatException, UnknownKeyException, MissingKeyException {
+        this("server.conf");
+    }
+
+    private void processLine(String line) throws UnknownKeyException {
+        String[] words = line.split("=");
+        String keyName = words[0].trim();
+        checkKey(keyName);
+        mProperties.put(keyName, words[1].trim());
+    }
+
+    private void checkKey(String keyName) throws UnknownKeyException {
+        for (String knownKey : mKnownProperties) {
+            if (keyName.equals(knownKey)) {
+                return;
+            }
+        }
+
+        throw new UnknownKeyException("Cheia " + keyName + " este necunoscuta.");
+    }
+
+    public int getTcpPort() {
+        return Integer.parseInt(mProperties.get("TCP_PORT"));
+    }
+
+    public int getMaxClients() {
+        return Integer.parseInt(mProperties.get("MAX_CLIENTS"));
+    }
+}
+ try {
+            ServerConfig config = new ServerConfig();
+            System.out.println("Tcp port: " + config.getTcpPort());
+            System.out.println("Max clients: " + config.getMaxClients());
+        } catch (IOException ex) {
+            System.err.println("Exceptie de tip IO: " + ex.getMessage());
+        } catch (InvalidFormatException ex) {
+            System.err.println("Format invalid: " + ex.getMessage());
+        } catch (UnknownKeyException | MissingKeyException ex) {
+            System.err.println(ex.getMessage());
+        }
+
+    }
+    
+    /*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import exceptions.InvalidFormatException;
+import exceptions.MissingKeyException;
+import exceptions.UnknownKeyException;
+
+/**
+ *
+ * @author mariana
+ */
+public class ServerConfig {
+    
+    public int contor = 0;
+    public int max_clients = 0;
+    public int tcp_port = 0;
+    public String linie;
+    
+    public ServerConfig(String fisier) throws FileNotFoundException, IOException, InvalidFormatException, MissingKeyException, UnknownKeyException {
+       
+        FileWriter fw = new FileWriter (fisier);
+        BufferedWriter bw = new BufferedWriter (fw);
+        bw.write("MAX_CLIENTS  =  890");
+        bw.newLine();
+        bw.write("TCP_PORT  =  9000");
+        bw.close();
+        
+        
+        String [] verificare ;
+        FileReader fr = new FileReader (fisier);
+        BufferedReader br = new BufferedReader(fr);
+        
+        while((linie = br.readLine()) != null){
+            
+            linie =  linie.trim();
+            if(linie.isEmpty()) continue;
+            if(linie.startsWith("#")) continue;
+           
+            if(linie.contains("=") == false) throw new InvalidFormatException("Nu se respecta formatul"); 
+            
+            verificare = linie.split("=");
+                
+                if(verificare[0].trim().equals("MAX_CLIENTS" )){      
+                    max_clients = Integer.parseInt(verificare[1].trim());
+                    contor ++;
+                    
+                   
+            }
+                else  if( verificare[0].trim().equals( "TCP_PORT")){
+                    tcp_port = Integer.parseInt(verificare[1].trim());
+                    contor ++;
+            }
+            
+                else throw new UnknownKeyException("Lipseste formatul.");
+        }
+        
+        if (contor != 2) throw new MissingKeyException("Nu au fost gasiti parametrii.");
+    }
+ 
+    public ServerConfig () throws IOException, FileNotFoundException, InvalidFormatException, MissingKeyException, UnknownKeyException{ 
+    
+        this("server_conf.DAT");
+    }
+    
+    public int getTcpPort(){
+    
+        return tcp_port;
+    }
+    
+    public int getMaxCkients(){
+    
+        return max_clients;
+    }
+}
+ 
