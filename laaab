@@ -1,0 +1,54 @@
+ import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.util.Scanner;
+
+
+public class ServerConfig {
+        private int TCP_PORT;
+        private int MAX_CLIENTS;
+
+    /**
+     *
+     * @param fileName
+     * @throws FileNotFoundException
+     */
+    public ServerConfig(String fileName)throws FileNotFoundException{
+    
+        FileInputStream fileInputStream = new FileInputStream(fileName);
+        Scanner scanner = new Scanner(fileInputStream);
+        String line;
+        while(scanner.hasNext()){
+            line = scanner.nextLine();
+            if(!line.isEmpty()){
+                String[] splittedLine = line.split("=");
+                if(splittedLine[0].contains("Tcp_port")){
+                    TCP_PORT = Integer.parseInt(splittedLine[1]);
+                }
+                else if(splittedLine[0].contains("Max Clients")){
+                    MAX_CLIENTS = Integer.parseInt(splittedLine[1]);
+                }
+            }
+        }
+       
+    }
+
+    public int getTCP_PORT() {
+        return TCP_PORT;
+    }
+
+    public int getMAX_CLIENTS() {
+        return MAX_CLIENTS;
+    }
+       public ServerConfig() throws FileNotFoundException{
+           this("server.conf");
+           
+       }
+
+}
+
+de pus in main
+try {
+            ServerConfig config = new ServerConfig();
+            System.out.println("Tcp port: " + config.getTcpPort());
+            System.out.println("Max clients: " + config.getMaxClients());
+        } catch (FileNotFoundException) 
