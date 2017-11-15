@@ -1,0 +1,207 @@
+package seriaf.poo.client;
+
+import java.net.Socket;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import seriaf.poo.structs.Message;
+import seriaf.poo.structs.PrivateMessage;
+
+public class ClientPeer {
+    private String sender;
+    private Socket socket;
+    private ObjectOutputStream outputStream = null;
+    
+    public ClientPeer(String sender1, Socket socketObject) throws IOException {
+         sender = sender1;
+         socket = socketObject;
+         outputStream = new ObjectOutputStream(socket.getOutputStream());
+    }
+    
+    public void sendMessage(String message) throws IOException {
+        Message object1 = new Message(sender, message);
+        outputStream.writeObject(object1);
+    }
+    
+    public void sendMessage(String message, String recipient) throws IOException {
+        PrivateMessage object2 = new PrivateMessage(recipient, sender, message);
+        outputStream.writeObject(object2);
+    }
+    
+}/////////////////////////////////
+
+package seriaf.poo.client;
+
+import java.net.Socket;
+import java.io.IOException;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+        
+public class TextClient {
+    
+    public static void main(String[] args) throws IOException {
+        System.out.println("Insert name!");
+        BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+        String name = in.readLine();
+        try {
+            Socket socketObject = new Socket("127.0.0.1", 9000);
+            ClientPeer objectClientPeer = new ClientPeer(name, socketObject);
+            String line = "";
+            while (true) {
+                line = in.readLine();
+                if (line.equals("/q")) {
+                    break;
+                }
+                String[] array = line.split(" ");
+                int size = array.length;
+                if (line.startsWith("/w")) {
+                    if (size >= 3) {
+                        String name1 = array[1];
+                        String message1 = line.substring(4 + name1.length());
+                        objectClientPeer.sendMessage(message1, name1);
+                    } else {
+                        objectClientPeer.sendMessage(line);
+                    }
+                } else {
+                   objectClientPeer.sendMessage(line); 
+                }
+            }
+            socketObject.close();
+        } catch (Exception e) {
+            System.out.println("Bafta!!!" + e);
+        }
+    }
+}/////////////////////////////////////////////////
+
+
+package seriaf.poo.server;
+
+import java.io.IOException;
+import java.net.Socket;
+import java.io.ObjectInputStream;
+import seriaf.poo.structs.Message;
+
+public class ServerPeer {
+    private Socket socket;
+    
+    public ServerPeer(Socket socketObject) {
+        socket = socketObject;
+    }
+    
+    public void run() {
+        try {
+            ObjectInputStream iS = new ObjectInputStream(socket.getInputStream());
+            while (true) {
+                Message message = (Message) iS.readObject();
+                System.out.println(message);
+            }
+        } catch (ClassNotFoundException | IOException e) {
+            e.printStackTrace();
+        }
+    }
+}////////////////////////////////////////////////////
+package seriaf.poo.server;
+
+import java.io.IOException;
+import java.net.Socket;
+import java.net.ServerSocket;
+import seriaf.poo.server.config.ServerConfig;
+import seriaf.poo.server.exceptions.InvalidFormatException;
+import seriaf.poo.server.exceptions.MissingKeyException;
+import seriaf.poo.server.exceptions.UnknownKeyException;
+
+public class Server {
+    
+    public static void main(String[] args) {
+        try {
+            ServerConfig serverConfig = new ServerConfig();
+            ServerSocket serverSocket = new ServerSocket(serverConfig.getTcpPort());
+            Socket socket = serverSocket.accept();
+            ServerPeer serverPeer = new ServerPeer(socket);
+            serverPeer.run();
+        } catch (IOException | InvalidFormatException | MissingKeyException 
+                | UnknownKeyException e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+
+////////////////////
+package seriaf.poo.structs;
+
+import java.io.IOException;
+import seriaf.poo.server.config.ServerConfig;
+import seriaf.poo.server.exceptions.InvalidFormatException;
+import seriaf.poo.server.exceptions.MissingKeyException;
+import seriaf.poo.server.exceptions.UnknownKeyException;
+
+public class Main {
+
+    public static void main(String[] args) throws IOException {
+        Message object1 = new Message("Adi", "Salut!");
+        Message object2 = new Message("Cristi", "Hello world!");
+        Message object3 = new Message("Ion", "Cel mai bun mesaj!");
+        
+        System.out.println(object1.toString());
+        System.out.println(object2.toString());
+        System.out.println(object3.toString());
+        
+        PrivateMessage object4 = new PrivateMessage("Ion", "Adi", "Ce faci?");
+        PrivateMessage object5 = new PrivateMessage("Ion", "Dan", "Salut!");
+        PrivateMessage object6 = new PrivateMessage("Caramitru", "Raul", "Bafta!");
+        
+        System.out.println(object4.toString());
+        System.out.println(object5.toString());
+        System.out.println(object6.toString());
+        
+        System.out.println(object4.getRecipient());
+        System.out.println(object5.getRecipient());
+        System.out.println(object6.getRecipient());
+        
+        try {
+        ServerConfig object7 = new ServerConfig("file.txt");
+        System.out.printf("TCP_PORT = %d\n", object7.getTcpPort());
+        System.out.printf("MAX_CLIENTS = %d\n", object7.getMaxClients());
+        } catch (InvalidFormatException | MissingKeyException | UnknownKeyException e1) {
+            System.out.println("Exception thrown : " + e1);
+        }
+    }
+}//////////////////////////
+package seriaf.poo.structs;
+
+import java.io.Serializable;
+
+public class Message implements Serializable {
+    
+    private static final long serialVersionUID = 1;
+    private String mSender;
+    private String mMessage;
+    
+    public Message(String sender1, String message1) {
+        mSender = sender1;
+        mMessage = message1;
+    }
+    
+    public String toString() {
+        return mSender + ":" + mMessage;
+    }
+}///////////////////////////////////
+package seriaf.poo.structs;
+
+public class PrivateMessage extends Message {
+    
+    private static final long serialVersionUID = 2;
+    private String mRecipient;
+    
+    public PrivateMessage(String recipient1, String sender1, String message1) {
+        super(sender1, message1);
+        mRecipient = recipient1;
+    }
+    public String toString() {
+        return "(priv) " + super.toString();
+    }
+    
+    public String getRecipient() {
+        return mRecipient;
+    }
+}
